@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:4000";
+// ✅ API URL with safe fallback
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://expense-tracker-k2c3.onrender.com";
 
 function App() {
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -8,7 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // STEP 1️⃣ — Form state
+  // Form state
   const [form, setForm] = useState({
     amount: "",
     category: "",
@@ -16,7 +18,7 @@ function App() {
     date: ""
   });
 
-  // Fetch expenses
+  // Fetch expenses (GET)
   const fetchExpenses = async () => {
     try {
       setLoading(true);
@@ -26,7 +28,7 @@ function App() {
       const data = await res.json();
       setExpenses(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to fetch expenses");
     } finally {
       setLoading(false);
     }
@@ -36,12 +38,38 @@ function App() {
     fetchExpenses();
   }, []);
 
-  // STEP 2️⃣ — Form change handler
+  // Form change handler
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // STEP 3️⃣ — Submit handler (idempotent)
+  // ✅ Retry-safe POST (handles Render cold start)
+  const postExpenseWithRetry = async (payload, retries = 2) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s
+
+      const res = await fetch(`${API_URL}/expenses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error("Failed to add expense");
+      return res.json();
+    } catch (err) {
+      if (retries > 0) {
+        await new Promise((r) => setTimeout(r, 2000)); // wait 2s
+        return postExpenseWithRetry(payload, retries - 1);
+      }
+      throw err;
+    }
+  };
+
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -57,32 +85,25 @@ function App() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`${API_URL}/expenses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      await postExpenseWithRetry(payload);
 
-      if (!res.ok) throw new Error("Failed to add expense");
-
-      // Reset form + refresh list
       setForm({ amount: "", category: "", description: "", date: "" });
       fetchExpenses();
     } catch (err) {
-      setError(err.message);
+      setError("Backend is waking up. Please retry in a few seconds.");
     } finally {
       setLoading(false);
     }
   };
 
-  // STEP 7️⃣ — Filtered expenses + total
+  // Filtered expenses + total
   const visibleExpenses = expenses.filter(
     (e) => !categoryFilter || e.category === categoryFilter
   );
 
   const total = visibleExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-  // ⭐ NICE-TO-HAVE 2️⃣ — Summary by category
+  // Summary by category
   const summaryByCategory = visibleExpenses.reduce((acc, e) => {
     acc[e.category] = (acc[e.category] || 0) + e.amount;
     return acc;
@@ -92,7 +113,7 @@ function App() {
     <div style={{ maxWidth: "800px", margin: "40px auto", padding: "0 16px" }}>
       <h1>Expense Tracker</h1>
 
-      {/* STEP 4️⃣ — Expense Form */}
+      {/* Expense Form */}
       <form onSubmit={handleSubmit} style={{ marginBottom: "24px" }}>
         <input
           name="amount"
@@ -130,7 +151,7 @@ function App() {
         </button>
       </form>
 
-      {/* STEP 8️⃣ — Filter + Total */}
+      {/* Filter + Total */}
       <div style={{ marginBottom: "16px" }}>
         <label>
           Filter by category:{" "}
@@ -151,7 +172,7 @@ function App() {
           <strong>Total:</strong> ₹{(total / 100).toFixed(2)}
         </p>
 
-        {/* ⭐ NICE-TO-HAVE 2️⃣ — Summary View */}
+        {/* Summary by category */}
         {Object.keys(summaryByCategory).length > 0 && (
           <div style={{ marginTop: "12px" }}>
             <strong>Summary by Category:</strong>
