@@ -9,7 +9,7 @@ The goal was to prioritize **correctness, clarity, and robustness** over visual 
 
 ## 🔗 Live URLs
 
-- **Frontend (Vercel):** https://expense-tracker-2-kohl.vercel.app  
+- **Frontend (Vercel):** https://expense-tracker-3-blue.vercel.app/  
 - **Backend API (Render):** https://expense-tracker-k2c3.onrender.com  
 
 Health check:
