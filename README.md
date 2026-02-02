@@ -46,18 +46,23 @@ GET /health
 
 ## 🏗️ Architecture Overview
 
+
 expense-tracker/
 ├── backend/
-│ ├── index.js # Express server
-│ ├── routes/expenses.js # Expense routes
-│ ├── db.js # SQLite database setup
-│ └── package.json
+│   ├── index.js            # Express server
+│   ├── routes/
+│   │   └── expenses.js     # Expense routes
+│   ├── db.js               # SQLite database setup
+│   └── package.json
 │
 ├── frontend/
-│ ├── src/App.jsx # React UI
-│ └── package.json
+│   ├── src/
+│   │   └── App.jsx         # React UI
+│   └── package.json
 │
 └── README.md
+
+
 
 
 ---
