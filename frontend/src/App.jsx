@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const API_URL = "http://localhost:4000";
 
 function App() {
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -74,11 +75,24 @@ function App() {
     }
   };
 
+  // STEP 7️⃣ — Filtered expenses + total
+  const visibleExpenses = expenses.filter(
+    (e) => !categoryFilter || e.category === categoryFilter
+  );
+
+  const total = visibleExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  // ⭐ NICE-TO-HAVE 2️⃣ — Summary by category
+  const summaryByCategory = visibleExpenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount;
+    return acc;
+  }, {});
+
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", padding: "0 16px" }}>
       <h1>Expense Tracker</h1>
 
-      {/* STEP 4️⃣ — Expense Form (ABOVE LIST) */}
+      {/* STEP 4️⃣ — Expense Form */}
       <form onSubmit={handleSubmit} style={{ marginBottom: "24px" }}>
         <input
           name="amount"
@@ -116,11 +130,47 @@ function App() {
         </button>
       </form>
 
+      {/* STEP 8️⃣ — Filter + Total */}
+      <div style={{ marginBottom: "16px" }}>
+        <label>
+          Filter by category:{" "}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {[...new Set(expenses.map((e) => e.category))].map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p style={{ marginTop: "8px" }}>
+          <strong>Total:</strong> ₹{(total / 100).toFixed(2)}
+        </p>
+
+        {/* ⭐ NICE-TO-HAVE 2️⃣ — Summary View */}
+        {Object.keys(summaryByCategory).length > 0 && (
+          <div style={{ marginTop: "12px" }}>
+            <strong>Summary by Category:</strong>
+            <ul>
+              {Object.entries(summaryByCategory).map(([cat, amt]) => (
+                <li key={cat}>
+                  {cat}: ₹{(amt / 100).toFixed(2)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       {loading && <p>Loading expenses…</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <ul>
-        {expenses.map((e) => (
+        {visibleExpenses.map((e) => (
           <li key={e.id}>
             {e.date} — {e.category} — ₹{(e.amount / 100).toFixed(2)}
           </li>
